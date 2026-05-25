@@ -11,8 +11,8 @@ struct RadarChartView: View {
             let count = scores.count
             guard count >= 3 else { return }
 
-            let angleStep = (2 * .pi) / Double(count)
-            let startAngle = -.pi / 2
+            let angleStep = (2 * Double.pi) / Double(count)
+            let startAngle = -Double.pi / 2
 
             // Grid circles
             for level in 1...4 {

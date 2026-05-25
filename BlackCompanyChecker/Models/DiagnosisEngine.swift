@@ -65,7 +65,7 @@ final class DiagnosisEngine {
     func buildResult() -> DiagnosisResult {
         var totalScore = 0
         var maxScore = 0
-        var categoryScores: [(category: Category, score: Int, maxScore: Int)] = []
+        var categoryScores: [CategoryScore] = []
 
         for cat in categories {
             var catScore = 0
@@ -75,7 +75,7 @@ final class DiagnosisEngine {
             }
             totalScore += catScore
             maxScore += catMax
-            categoryScores.append((category: cat, score: catScore, maxScore: catMax))
+            categoryScores.append(CategoryScore(category: cat, score: catScore, maxScore: catMax))
         }
 
         return DiagnosisResult(totalScore: totalScore, maxScore: maxScore, categoryScores: categoryScores)

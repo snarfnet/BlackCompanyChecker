@@ -6,11 +6,6 @@ options:
   xcodeVersion: "16.0"
   generateEmptyDirectories: true
 
-packages:
-  GoogleMobileAds:
-    url: https://github.com/googleads/swift-package-manager-google-mobile-ads
-    from: "12.0.0"
-
 settings:
   base:
     MARKETING_VERSION: "1.0"
@@ -27,8 +22,6 @@ settings:
     INFOPLIST_KEY_CFBundleDisplayName: "ブラック企業診断"
     INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.business"
     INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
-    INFOPLIST_KEY_GADApplicationIdentifier: "ca-app-pub-9404799280370656~6796419777"
-    INFOPLIST_KEY_NSUserTrackingUsageDescription: "To show relevant ads and improve your experience."
 
 targets:
   BlackCompanyChecker:
@@ -40,6 +33,3 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.snarfnet.blackcompanychecker
         TARGETED_DEVICE_FAMILY: "1,2"
-    dependencies:
-      - package: GoogleMobileAds
-        product: GoogleMobileAds
