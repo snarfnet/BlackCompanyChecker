@@ -6,197 +6,24 @@ on:
 jobs:
   submit:
     runs-on: macos-latest
-    timeout-minutes: 15
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+
+      - name: Generate App Store screenshots
+        run: |
+          npm install --no-save playwright
+          npx playwright install chromium
+          node screenshots/capture.js
 
       - name: Submit latest build for App Review
         env:
           ASC_API_KEY_CONTENT: ${{ secrets.ASC_API_KEY_CONTENT }}
           ASC_KEY_ID: WDXGY9WX55
           ASC_ISSUER_ID: 2be0734f-943a-4d61-9dc9-5d9045c46fec
-          ASC_BUNDLE_ID: com.snarfnet.blackcompanychecker
+          APP_ID: "6773001121"
+          APP_VERSION: "1.0"
+          TARGET_PRICE_JPY: "100"
         run: |
           pip3 install "pyjwt[crypto]" requests --quiet --break-system-packages 2>/dev/null || pip3 install "pyjwt[crypto]" requests --quiet
-          python3 <<'PY'
-          import base64
-          import json
-          import os
-          import sys
-          import time
-          from urllib.parse import urlencode
-
-          import jwt
-          import requests
-
-          BASE = "https://api.appstoreconnect.apple.com/v1"
-          key = base64.b64decode(os.environ["ASC_API_KEY_CONTENT"]).decode("utf-8")
-          token = jwt.encode(
-              {
-                  "iss": os.environ["ASC_ISSUER_ID"],
-                  "iat": int(time.time()),
-                  "exp": int(time.time()) + 20 * 60,
-                  "aud": "appstoreconnect-v1",
-              },
-              key,
-              algorithm="ES256",
-              headers={"kid": os.environ["ASC_KEY_ID"]},
-          )
-          headers = {
-              "Authorization": f"Bearer {token}",
-              "Content-Type": "application/json",
-          }
-
-          def call(method, path, *, params=None, body=None, ok=(200, 201, 204)):
-              url = f"{BASE}{path}"
-              response = requests.request(method, url, headers=headers, params=params, json=body, timeout=60)
-              if response.status_code not in ok:
-                  print(f"\n{method} {response.url} -> {response.status_code}")
-                  try:
-                      print(json.dumps(response.json(), ensure_ascii=False, indent=2))
-                  except Exception:
-                      print(response.text)
-                  response.raise_for_status()
-              if response.status_code == 204 or not response.text:
-                  return None
-              return response.json()
-
-          def first(data, message):
-              items = data.get("data", [])
-              if not items:
-                  raise RuntimeError(message)
-              return items[0]
-
-          app = first(
-              call("GET", "/apps", params={"filter[bundleId]": os.environ["ASC_BUNDLE_ID"], "limit": "1"}),
-              f"App not found for bundle id {os.environ['ASC_BUNDLE_ID']}",
-          )
-          app_id = app["id"]
-          print(f"App: {app['attributes']['name']} ({app_id})")
-
-          call(
-              "PATCH",
-              f"/apps/{app_id}",
-              body={
-                  "data": {
-                      "type": "apps",
-                      "id": app_id,
-                      "attributes": {"contentRightsDeclaration": "DOES_NOT_USE_THIRD_PARTY_CONTENT"},
-                  }
-              },
-          )
-
-          version = first(
-              call(
-                  "GET",
-                  f"/apps/{app_id}/appStoreVersions",
-                  params={
-                      "filter[platform]": "IOS",
-                      "limit": "10",
-                      "include": "build",
-                  },
-              ),
-              "No iOS App Store version found.",
-          )
-          version_id = version["id"]
-          attrs = version["attributes"]
-          print(f"Version: {attrs.get('versionString')} state={attrs.get('appStoreState')} appVersionState={attrs.get('appVersionState')}")
-
-          call(
-              "PATCH",
-              f"/appStoreVersions/{version_id}",
-              body={
-                  "data": {
-                      "type": "appStoreVersions",
-                      "id": version_id,
-                      "attributes": {
-                          "releaseType": "AFTER_APPROVAL",
-                          "usesIdfa": False,
-                      },
-                  }
-              },
-          )
-
-          build = None
-          for _ in range(20):
-              builds = call(
-                  "GET",
-                  f"/apps/{app_id}/builds",
-                  params={
-                      "limit": "10",
-                  },
-              ).get("data", [])
-              builds = sorted(
-                  builds,
-                  key=lambda item: item.get("attributes", {}).get("uploadedDate") or "",
-                  reverse=True,
-              )
-              builds = [
-                  item for item in builds
-                  if item.get("attributes", {}).get("processingState") == "VALID"
-              ]
-              if builds:
-                  build = builds[0]
-                  break
-              print("Latest build is still processing; waiting 30 seconds...")
-              time.sleep(30)
-          if not build:
-              raise RuntimeError("No VALID build found yet. Wait for App Store Connect processing, then rerun this workflow.")
-          build_id = build["id"]
-          print(f"Build: {build['attributes'].get('version')} ({build_id})")
-
-          call(
-              "PATCH",
-              f"/appStoreVersions/{version_id}/relationships/build",
-              body={"data": {"type": "builds", "id": build_id}},
-          )
-          print("Attached latest valid build to App Store version.")
-
-          submission = call(
-              "POST",
-              "/reviewSubmissions",
-              body={
-                  "data": {
-                      "type": "reviewSubmissions",
-                      "relationships": {
-                          "app": {"data": {"type": "apps", "id": app_id}}
-                      },
-                  }
-              },
-          )
-          submission_id = submission["data"]["id"]
-          print(f"Review submission created: {submission_id}")
-
-          call(
-              "POST",
-              "/reviewSubmissionItems",
-              body={
-                  "data": {
-                      "type": "reviewSubmissionItems",
-                      "relationships": {
-                          "reviewSubmission": {
-                              "data": {"type": "reviewSubmissions", "id": submission_id}
-                          },
-                          "appStoreVersion": {
-                              "data": {"type": "appStoreVersions", "id": version_id}
-                          },
-                      },
-                  }
-              },
-          )
-          print("App Store version added to review submission.")
-
-          submission = call(
-              "PATCH",
-              f"/reviewSubmissions/{submission_id}",
-              body={
-                  "data": {
-                      "type": "reviewSubmissions",
-                      "id": submission_id,
-                      "attributes": {"submitted": True},
-                  }
-              },
-          )
-          print("Submitted for App Review.")
-          print(json.dumps(submission, ensure_ascii=False, indent=2))
-          PY
+          python3 scripts/submit_production.py
