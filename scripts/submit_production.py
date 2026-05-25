@@ -396,7 +396,10 @@ def assign_build(version_id, build_id):
     response = api("PATCH", f"/builds/{build_id}", json={
         "data": {"type": "builds", "id": build_id, "attributes": {"usesNonExemptEncryption": False}}
     })
-    require_ok(response, "Build encryption")
+    if response.status_code == 409 and "already set" in response.text:
+        print("Build encryption: already set")
+    else:
+        require_ok(response, "Build encryption")
     response = api("PATCH", f"/appStoreVersions/{version_id}/relationships/build", json={
         "data": {"type": "builds", "id": build_id}
     })
