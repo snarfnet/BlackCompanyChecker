@@ -14,7 +14,6 @@ final class DiagnosisEngine {
     }
 
     let categories = allCategories
-    let isEnglish = Locale.preferredLanguages.first?.hasPrefix("en") == true
 
     var currentCategory: Category {
         categories[currentCategoryIndex]

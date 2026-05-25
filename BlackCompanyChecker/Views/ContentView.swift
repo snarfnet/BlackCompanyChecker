@@ -17,7 +17,7 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            BannerAdView(adUnitID: "ca-app-pub-9404799280370656/PLACEHOLDER")
+            BannerAdView(adUnitID: "ca-app-pub-9404799280370656/4170256437")
                 .frame(height: 50)
         }
         .ignoresSafeArea(.keyboard)

@@ -13,13 +13,11 @@ struct IntroView: View {
                     .foregroundStyle(.red.opacity(0.8))
                     .padding(.bottom, 8)
 
-                Text(engine.isEnglish ? "Black Company\nDiagnosis" : "ブラック企業\n診断")
+                Text("ブラック企業\n診断")
                     .font(.system(size: 36, weight: .black, design: .rounded))
                     .multilineTextAlignment(.center)
 
-                Text(engine.isEnglish
-                     ? "10 categories, \(engine.totalQuestions) questions.\nFind out how black your company really is."
-                     : "10カテゴリ・全\(engine.totalQuestions)問の本格診断。\nあなたの会社のブラック度を判定します。")
+                Text("10カテゴリ・全\(engine.totalQuestions)問の本格診断。\nあなたの会社のブラック度を判定します。")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -31,10 +29,10 @@ struct IntroView: View {
                             Image(systemName: cat.icon)
                                 .frame(width: 28)
                                 .foregroundStyle(.red.opacity(0.7))
-                            Text(engine.isEnglish ? cat.nameEn : cat.name)
+                            Text(cat.name)
                                 .font(.subheadline)
                             Spacer()
-                            Text("\(cat.questions.count)" + (engine.isEnglish ? "Q" : "問"))
+                            Text("\(cat.questions.count)問")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -48,7 +46,7 @@ struct IntroView: View {
                 Button {
                     withAnimation { engine.phase = .diagnosis }
                 } label: {
-                    Text(engine.isEnglish ? "Start Diagnosis" : "診断スタート")
+                    Text("診断スタート")
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
@@ -57,9 +55,7 @@ struct IntroView: View {
                 .tint(.red)
                 .padding(.horizontal, 32)
 
-                Text(engine.isEnglish
-                     ? "All data stays on your device.\nNothing is sent to any server."
-                     : "データは端末内のみで処理されます。\n外部には一切送信しません。")
+                Text("データは端末内のみで処理されます。\n外部には一切送信しません。")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                     .multilineTextAlignment(.center)

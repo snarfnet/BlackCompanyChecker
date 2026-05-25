@@ -27,7 +27,7 @@ settings:
     INFOPLIST_KEY_CFBundleDisplayName: "ブラック企業診断"
     INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.business"
     INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
-    INFOPLIST_KEY_GADApplicationIdentifier: "ca-app-pub-9404799280370656~PLACEHOLDER"
+    INFOPLIST_KEY_GADApplicationIdentifier: "ca-app-pub-9404799280370656~6796419777"
     INFOPLIST_KEY_NSUserTrackingUsageDescription: "To show relevant ads and improve your experience."
 
 targets:

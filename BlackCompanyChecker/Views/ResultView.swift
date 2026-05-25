@@ -20,16 +20,16 @@ struct ResultView: View {
                         Text(result.rank)
                             .font(.system(size: 60, weight: .black, design: .rounded))
                             .foregroundStyle(.white)
-                        Text(engine.isEnglish ? "RANK" : "ランク")
+                        Text("ランク")
                             .font(.caption2.bold())
                             .foregroundStyle(.white.opacity(0.8))
                     }
                 }
 
-                Text(engine.isEnglish ? result.rankTitleEn : result.rankTitle)
+                Text(result.rankTitle)
                     .font(.title.bold())
 
-                Text("\(result.totalScore) / \(result.maxScore)" + (engine.isEnglish ? " pts" : " 点"))
+                Text("\(result.totalScore) / \(result.maxScore) 点")
                     .font(.title3)
                     .foregroundStyle(.secondary)
 
@@ -47,14 +47,14 @@ struct ResultView: View {
                     .frame(height: 16)
 
                     HStack {
-                        Text(engine.isEnglish ? "White" : "ホワイト")
+                        Text("ホワイト")
                             .font(.caption2)
                             .foregroundStyle(.green)
                         Spacer()
                         Text(String(format: "%.0f%%", result.percentage))
                             .font(.caption.bold())
                         Spacer()
-                        Text(engine.isEnglish ? "Black" : "ブラック")
+                        Text("ブラック")
                             .font(.caption2)
                             .foregroundStyle(.red)
                     }
@@ -64,9 +64,7 @@ struct ResultView: View {
                 // Radar chart
                 RadarChartView(
                     scores: result.categoryScores.map { cs in
-                        (label: engine.isEnglish
-                         ? String(cs.category.nameEn.prefix(8))
-                         : String(cs.category.name.prefix(5)),
+                        (label: String(cs.category.name.prefix(5)),
                          value: cs.maxScore > 0 ? Double(cs.score) / Double(cs.maxScore) : 0)
                     },
                     accentColor: rankColor(result.rank)
@@ -76,7 +74,7 @@ struct ResultView: View {
 
                 // Category breakdown
                 VStack(spacing: 8) {
-                    Text(engine.isEnglish ? "Category Breakdown" : "カテゴリ別スコア")
+                    Text("カテゴリ別スコア")
                         .font(.headline)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -86,7 +84,7 @@ struct ResultView: View {
                             Image(systemName: cs.category.icon)
                                 .frame(width: 24)
                                 .foregroundStyle(barColor(pct))
-                            Text(engine.isEnglish ? cs.category.nameEn : cs.category.name)
+                            Text(cs.category.name)
                                 .font(.caption)
                                 .frame(width: 90, alignment: .leading)
                             GeometryReader { geo in
@@ -112,7 +110,7 @@ struct ResultView: View {
 
                 // Advice
                 VStack(alignment: .leading, spacing: 8) {
-                    Label(engine.isEnglish ? "Advice" : "アドバイス", systemImage: "lightbulb.fill")
+                    Label("アドバイス", systemImage: "lightbulb.fill")
                         .font(.headline)
                         .foregroundStyle(.orange)
                     Text(result.advice)
@@ -127,7 +125,7 @@ struct ResultView: View {
                 // Share & Retry
                 HStack(spacing: 16) {
                     ShareLink(item: shareText(result)) {
-                        Label(engine.isEnglish ? "Share" : "共有", systemImage: "square.and.arrow.up")
+                        Label("共有", systemImage: "square.and.arrow.up")
                             .font(.headline)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
@@ -137,7 +135,7 @@ struct ResultView: View {
                     Button {
                         withAnimation { engine.reset() }
                     } label: {
-                        Label(engine.isEnglish ? "Retry" : "もう一度", systemImage: "arrow.counterclockwise")
+                        Label("もう一度", systemImage: "arrow.counterclockwise")
                             .font(.headline)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
@@ -154,11 +152,7 @@ struct ResultView: View {
     }
 
     private func shareText(_ result: DiagnosisResult) -> String {
-        let title = engine.isEnglish ? result.rankTitleEn : result.rankTitle
-        let app = engine.isEnglish ? "Black Company Diagnosis" : "ブラック企業診断"
-        return engine.isEnglish
-            ? "My company scored Rank \(result.rank) (\(title))! \(result.totalScore)/\(result.maxScore) pts - \(app)"
-            : "うちの会社のブラック度は【\(result.rank)ランク】（\(title)）！ \(result.totalScore)/\(result.maxScore)点 - \(app)"
+        "うちの会社のブラック度は【\(result.rank)ランク】（\(result.rankTitle)）！ \(result.totalScore)/\(result.maxScore)点 - ブラック企業診断"
     }
 
     private func rankColor(_ rank: String) -> Color {

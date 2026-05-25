@@ -10,7 +10,7 @@ struct QuestionView: View {
                 ProgressView(value: engine.overallProgress)
                     .tint(.red)
                 HStack {
-                    Text(engine.isEnglish ? engine.currentCategory.nameEn : engine.currentCategory.name)
+                    Text(engine.currentCategory.name)
                         .font(.caption.bold())
                         .foregroundStyle(.red.opacity(0.8))
                     Spacer()
@@ -26,7 +26,7 @@ struct QuestionView: View {
             HStack(spacing: 8) {
                 Image(systemName: engine.currentCategory.icon)
                     .foregroundStyle(.red.opacity(0.7))
-                Text(engine.isEnglish ? engine.currentCategory.nameEn : engine.currentCategory.name)
+                Text(engine.currentCategory.name)
                     .font(.headline)
                 Spacer()
                 Text("Q\(engine.currentQuestionIndex + 1)/\(engine.currentCategory.questions.count)")
@@ -38,7 +38,7 @@ struct QuestionView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     // Question
-                    Text(engine.isEnglish ? engine.currentQuestion.textEn : engine.currentQuestion.text)
+                    Text(engine.currentQuestion.text)
                         .font(.title3.bold())
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal)
@@ -53,7 +53,7 @@ struct QuestionView: View {
                             } label: {
                                 HStack(alignment: .top, spacing: 12) {
                                     scoreIndicator(choice.score)
-                                    Text(engine.isEnglish ? choice.textEn : choice.text)
+                                    Text(choice.text)
                                         .font(.subheadline)
                                         .multilineTextAlignment(.leading)
                                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -82,7 +82,7 @@ struct QuestionView: View {
                 Button {
                     withAnimation { engine.goBack() }
                 } label: {
-                    Label(engine.isEnglish ? "Previous" : "前の質問", systemImage: "chevron.left")
+                    Label("前の質問", systemImage: "chevron.left")
                         .font(.subheadline)
                 }
                 .padding(.bottom, 8)
