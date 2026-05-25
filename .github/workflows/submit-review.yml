@@ -124,10 +124,17 @@ jobs:
                   f"/apps/{app_id}/builds",
                   params={
                       "limit": "10",
-                      "sort": "-uploadedDate",
-                      "filter[processingState]": "VALID",
                   },
               ).get("data", [])
+              builds = sorted(
+                  builds,
+                  key=lambda item: item.get("attributes", {}).get("uploadedDate") or "",
+                  reverse=True,
+              )
+              builds = [
+                  item for item in builds
+                  if item.get("attributes", {}).get("processingState") == "VALID"
+              ]
               if builds:
                   build = builds[0]
                   break
