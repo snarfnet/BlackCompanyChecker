@@ -1,0 +1,162 @@
+name: Prepare ASC Metadata
+
+on:
+  workflow_dispatch:
+
+jobs:
+  prepare:
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fill required App Store Connect metadata
+        env:
+          ASC_API_KEY_CONTENT: ${{ secrets.ASC_API_KEY_CONTENT }}
+          ASC_KEY_ID: WDXGY9WX55
+          ASC_ISSUER_ID: 2be0734f-943a-4d61-9dc9-5d9045c46fec
+          ASC_BUNDLE_ID: com.snarfnet.blackcompanychecker
+        run: |
+          pip3 install "pyjwt[crypto]" requests --quiet --break-system-packages 2>/dev/null || pip3 install "pyjwt[crypto]" requests --quiet
+          python3 <<'PY'
+          import base64
+          import json
+          import os
+          import time
+
+          import jwt
+          import requests
+
+          BASE = "https://api.appstoreconnect.apple.com/v1"
+          key = base64.b64decode(os.environ["ASC_API_KEY_CONTENT"]).decode("utf-8")
+          token = jwt.encode(
+              {
+                  "iss": os.environ["ASC_ISSUER_ID"],
+                  "iat": int(time.time()),
+                  "exp": int(time.time()) + 20 * 60,
+                  "aud": "appstoreconnect-v1",
+              },
+              key,
+              algorithm="ES256",
+              headers={"kid": os.environ["ASC_KEY_ID"]},
+          )
+          headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+
+          def call(method, path, *, params=None, body=None, ok=(200, 201, 204), fatal=True):
+              response = requests.request(f"{method}", f"{BASE}{path}", headers=headers, params=params, json=body, timeout=60)
+              if response.status_code not in ok:
+                  print(f"\n{method} {response.url} -> {response.status_code}")
+                  try:
+                      print(json.dumps(response.json(), ensure_ascii=False, indent=2))
+                  except Exception:
+                      print(response.text)
+                  if fatal:
+                      response.raise_for_status()
+                  return None
+              if response.status_code == 204 or not response.text:
+                  return None
+              return response.json()
+
+          def first(data, message):
+              items = (data or {}).get("data", [])
+              if not items:
+                  raise RuntimeError(message)
+              return items[0]
+
+          app = first(call("GET", "/apps", params={"filter[bundleId]": os.environ["ASC_BUNDLE_ID"], "limit": "1"}), "App not found")
+          app_id = app["id"]
+          print(f"App: {app['attributes']['name']} ({app_id})")
+
+          version = first(
+              call(
+                  "GET",
+                  f"/apps/{app_id}/appStoreVersions",
+                  params={"filter[platform]": "IOS", "limit": "10", "include": "build"},
+              ),
+              "No iOS App Store version found",
+          )
+          version_id = version["id"]
+          print(f"Version: {version['attributes'].get('versionString')} ({version_id})")
+
+          locs = call("GET", f"/appStoreVersions/{version_id}/appStoreVersionLocalizations", params={"limit": "10"}).get("data", [])
+          if locs:
+              loc = locs[0]
+          else:
+              loc = call(
+                  "POST",
+                  "/appStoreVersionLocalizations",
+                  body={
+                      "data": {
+                          "type": "appStoreVersionLocalizations",
+                          "attributes": {"locale": "ja-JP"},
+                          "relationships": {
+                              "appStoreVersion": {
+                                  "data": {"type": "appStoreVersions", "id": version_id}
+                              }
+                          },
+                      }
+                  },
+              )["data"]
+          loc_id = loc["id"]
+          call(
+              "PATCH",
+              f"/appStoreVersionLocalizations/{loc_id}",
+              body={
+                  "data": {
+                      "type": "appStoreVersionLocalizations",
+                      "id": loc_id,
+                      "attributes": {
+                          "description": "ブラック企業診断は、職場の労務リスクを10カテゴリ・55問で確認できる診断アプリです。残業、給与、休暇、ハラスメント、離職率、求人、経営体質、教育、健康、働き方をスコア化し、SからFまでのランク、レーダーチャート、カテゴリ別スコア、改善アドバイスを表示します。個人の転職判断、職場改善の事前チェック、採用前の確認に使えます。回答は端末内で処理され、外部へ送信されません。",
+                          "keywords": "ブラック企業,労務,職場診断,転職,残業,ハラスメント,有給,給与,会社,働き方",
+                          "supportUrl": "https://github.com/snarfnet/BlackCompanyChecker/issues",
+                          "marketingUrl": "https://github.com/snarfnet/BlackCompanyChecker",
+                          "whatsNew": "初回リリース。10カテゴリ・55問の職場リスク診断に対応しました。",
+                      },
+                  }
+              },
+          )
+          print("Localized metadata updated.")
+
+          age = call("GET", f"/appStoreVersions/{version_id}/ageRatingDeclaration", fatal=False)
+          if age and age.get("data"):
+              age_id = age["data"]["id"]
+              attrs = {
+                  key: "NONE"
+                  for key in [
+                      "alcoholTobaccoOrDrugUseOrReferences",
+                      "contests",
+                      "gambling",
+                      "gamblingSimulated",
+                      "horrorOrFearThemes",
+                      "lootBox",
+                      "matureOrSuggestiveThemes",
+                      "medicalOrTreatmentInformation",
+                      "profanityOrCrudeHumor",
+                      "sexualContentGraphicAndNudity",
+                      "sexualContentOrNudity",
+                      "violenceCartoonOrFantasy",
+                      "violenceRealistic",
+                      "violenceRealisticProlongedGraphicOrSadistic",
+                  ]
+              }
+              attrs.update(
+                  {
+                      "advertising": False,
+                      "kidsAgeBand": None,
+                      "messagingAndChat": False,
+                      "unrestrictedWebAccess": False,
+                      "userGeneratedContent": False,
+                      "webBrowser": False,
+                  }
+              )
+              call(
+                  "PATCH",
+                  f"/ageRatingDeclarations/{age_id}",
+                  body={"data": {"type": "ageRatingDeclarations", "id": age_id, "attributes": attrs}},
+              )
+              print("Age rating declaration updated.")
+          else:
+              print("Age rating declaration not found; it may need to be created in App Store Connect UI.")
+
+          print("Pricing cannot be reliably inferred by this script. If pricing still blocks submission, set it in ASC to 100 JPY and rerun Submit App Review.")
+          PY
