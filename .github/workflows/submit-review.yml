@@ -152,26 +152,48 @@ jobs:
           )
           print("Attached latest valid build to App Store version.")
 
-          existing = call(
-              "GET",
-              f"/appStoreVersions/{version_id}/appStoreVersionSubmission",
-              ok=(200, 404),
-          )
-          if existing and existing.get("data"):
-              print("This version already has an App Store version submission.")
-              sys.exit(0)
-
           submission = call(
               "POST",
-              "/appStoreVersionSubmissions",
+              "/reviewSubmissions",
               body={
                   "data": {
-                      "type": "appStoreVersionSubmissions",
+                      "type": "reviewSubmissions",
                       "relationships": {
+                          "app": {"data": {"type": "apps", "id": app_id}}
+                      },
+                  }
+              },
+          )
+          submission_id = submission["data"]["id"]
+          print(f"Review submission created: {submission_id}")
+
+          call(
+              "POST",
+              "/reviewSubmissionItems",
+              body={
+                  "data": {
+                      "type": "reviewSubmissionItems",
+                      "relationships": {
+                          "reviewSubmission": {
+                              "data": {"type": "reviewSubmissions", "id": submission_id}
+                          },
                           "appStoreVersion": {
                               "data": {"type": "appStoreVersions", "id": version_id}
-                          }
+                          },
                       },
+                  }
+              },
+          )
+          print("App Store version added to review submission.")
+
+          submission = call(
+              "PATCH",
+              f"/reviewSubmissions/{submission_id}",
+              body={
+                  "data": {
+                      "type": "reviewSubmissions",
+                      "id": submission_id,
+                      "attributes": {"submitted": True},
                   }
               },
           )
