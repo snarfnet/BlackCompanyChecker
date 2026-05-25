@@ -110,7 +110,6 @@ jobs:
                           "keywords": "ブラック企業,労務,職場診断,転職,残業,ハラスメント,有給,給与,会社,働き方",
                           "supportUrl": "https://github.com/snarfnet/BlackCompanyChecker/issues",
                           "marketingUrl": "https://github.com/snarfnet/BlackCompanyChecker",
-                          "whatsNew": "初回リリース。10カテゴリ・55問の職場リスク診断に対応しました。",
                       },
                   }
               },
